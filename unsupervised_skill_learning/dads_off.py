@@ -290,6 +290,11 @@ def get_environment(env_name='point_mass'):
         vertical_wrist_constraint=FLAGS.vertical_wrist_constraint,
         randomize_initial_position=bool(FLAGS.randomized_initial_distribution),
         randomize_initial_rotation=bool(FLAGS.randomized_initial_distribution))
+  elif env_name == 'Ant-v4':
+    import gym
+    import softlearning.environments
+    env = gym.make('Ant-v4')
+    observation_omit_size = 0
   else:
     # note this is already wrapped, no need to wrap again
     env = suite_mujoco.load(env_name)
