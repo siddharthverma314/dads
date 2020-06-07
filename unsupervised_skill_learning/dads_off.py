@@ -54,14 +54,14 @@ import dads_agent
 
 from envs import skill_wrapper
 from envs import video_wrapper
-from envs.gym_mujoco import ant
-from envs.gym_mujoco import half_cheetah
-from envs.gym_mujoco import humanoid
-from envs.gym_mujoco import point_mass
+# from envs.gym_mujoco import ant
+# from envs.gym_mujoco import half_cheetah
+# from envs.gym_mujoco import humanoid
+# from envs.gym_mujoco import point_mass
 
-from envs import dclaw
-from envs import dkitty_redesign
-from envs import hand_block
+# from envs import dclaw
+# from envs import dkitty_redesign
+# from envs import hand_block
 
 from lib import py_tf_policy
 from lib import py_uniform_replay_buffer
@@ -290,10 +290,10 @@ def get_environment(env_name='point_mass'):
         vertical_wrist_constraint=FLAGS.vertical_wrist_constraint,
         randomize_initial_position=bool(FLAGS.randomized_initial_distribution),
         randomize_initial_rotation=bool(FLAGS.randomized_initial_distribution))
-  elif env_name == 'Ant-v4':
+  elif env_name.startswith('Ant'):
     import gym
-    import softlearning.environments
-    env = gym.make('Ant-v4')
+    import ant_hrl_maze
+    env = gym.make(env_name)
     observation_omit_size = 0
   else:
     # note this is already wrapped, no need to wrap again
