@@ -22,21 +22,21 @@
 --vid_name=skill
 
 # optimization hyperparmaters
---replay_buffer_capacity=100000
+--replay_buffer_capacity=10000
 
-# (set clear_buffer_iter=1 for on-policy)
---clear_buffer_every_iter=1
---initial_collect_steps=0
---collect_steps=2000
---num_epochs=10000
+# (set clear_buffer_every_iter=1 for on-policy optimization)
+--clear_buffer_every_iter=0
+--initial_collect_steps=2000
+--collect_steps=500
+--num_epochs=1000
 
 # skill dynamics optimization hyperparameters
---skill_dyn_train_steps=32
+--skill_dyn_train_steps=8
 --skill_dynamics_lr=3e-4
 --skill_dyn_batch_size=256
 
 # agent hyperparameters
---agent_gamma=0.995
+--agent_gamma=0.99
 --agent_lr=3e-4
 --agent_entropy=0.1
 --agent_train_steps=64
@@ -45,7 +45,7 @@
 # (optional, do not change for on-policy) relabelling or off-policy corrections
 --skill_dynamics_relabel_type=importance_sampling
 --num_samples_for_relabelling=1
---is_clip_eps=1.
+--is_clip_eps=10.
 
 # (optional) skills can be resampled within the episodes, relative to max_env_steps
 --min_steps_before_resample=2000
@@ -55,15 +55,15 @@
 --train_skill_dynamics_on_policy=0
 
 ### SHARED HYPERPARAMETERS ---------------------
---environment=Ant-v1
+--environment=AntXY-v4
 --max_env_steps=200
 --reduced_observation=2
 
 # define the type of skills being learnt
---num_skills=2
---skill_type=cont_uniform
+--num_skills=10
+--skill_type=discrete_uniform
 --random_skills=100
---num_evals=3
+--num_evals=10
 
 # (optional) policy, critic and skill dynamics
 --hidden_layer_size=512

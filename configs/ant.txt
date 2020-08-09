@@ -24,7 +24,7 @@
 # optimization hyperparmaters
 --replay_buffer_capacity=10000
 
-# (set clear_buffer_iter=1 for on-policy)
+# (set clear_buffer_every_iter=1 for on-policy optimization)
 --clear_buffer_every_iter=0
 --initial_collect_steps=2000
 --collect_steps=500
@@ -55,15 +55,15 @@
 --train_skill_dynamics_on_policy=0
 
 ### SHARED HYPERPARAMETERS ---------------------
---environment=DKitty_randomized
+--environment=Ant-v4
 --max_env_steps=200
---reduced_observation=2
+--reduced_observation=0
 
 # define the type of skills being learnt
---num_skills=2
---skill_type=cont_uniform
+--num_skills=10
+--skill_type=discrete_uniform
 --random_skills=100
---num_evals=3
+--num_evals=10
 
 # (optional) policy, critic and skill dynamics
 --hidden_layer_size=512
@@ -102,10 +102,10 @@
 --root_noise_ratio=0.0
 --upright_threshold=0.95
 --scale_root_position=1
---randomize_hfield=0.02
+--randomize_hfield=0.0
 
 # DKitty/DClaw
---observation_omission_size=2
+--observation_omission_size=0
 
 # Cube Manipulation hyperparameters
 --randomized_initial_distribution=1

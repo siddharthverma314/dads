@@ -290,11 +290,26 @@ def get_environment(env_name='point_mass'):
         vertical_wrist_constraint=FLAGS.vertical_wrist_constraint,
         randomize_initial_position=bool(FLAGS.randomized_initial_distribution),
         randomize_initial_rotation=bool(FLAGS.randomized_initial_distribution))
-  elif env_name.startswith('Ant'):
+  elif env_name == 'Ant-v4':
     import gym
     import ant_hrl_maze
-    env = gym.make(env_name)
+    env = gym.make('Ant-v4')
     observation_omit_size = 0
+  elif env_name == 'AntResetFree-v4':
+    import gym
+    import ant_hrl_maze
+    env = gym.make('AntResetFree-v4')
+    observation_omit_size = 0
+  elif env_name == 'AntXY-v4':
+    import gym
+    import ant_hrl_maze
+    env = gym.make('Ant-v4')
+    observation_omit_size = 2
+  elif env_name == 'AntResetFreeXY-v4':
+    import gym
+    import ant_hrl_maze
+    env = gym.make('AntResetFree-v4')
+    observation_omit_size = 2
   else:
     # note this is already wrapped, no need to wrap again
     env = suite_mujoco.load(env_name)
@@ -697,16 +712,8 @@ def eval_loop(eval_dir,
     num_evals = FLAGS.num_evals
 
   if plot_name is not None:
-    # color_map = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
-    color_map = ['b', 'g', 'r', 'c', 'm', 'y']
-    style_map = []
-    for line_style in ['-', '--', '-.', ':']:
-      style_map += [color + line_style for color in color_map]
-
-    plt.xlim(-15, 15)
-    plt.ylim(-15, 15)
-    # all_trajectories = []
-    # all_predicted_trajectories = []
+    plt.xlim(-5, 5)
+    plt.ylim(-5, 5)
 
   for idx in range(num_evals):
     if FLAGS.num_skills > 0:
@@ -746,8 +753,6 @@ def eval_loop(eval_dir,
     mean_reward = 0.
     per_skill_evaluations = 1
     predict_trajectory_steps = 0
-    # trajectories_per_skill = []
-    # predicted_trajectories_per_skill = []
     for eval_idx in range(per_skill_evaluations):
       eval_trajectory = run_on_env(
           eval_env,
@@ -763,32 +768,12 @@ def eval_loop(eval_dir,
           for step_idx in range(len(eval_trajectory))
       ])
 
-      # trajectory_states = np.array([
-      #     eval_trajectory[step_idx][0]
-      #     for step_idx in range(len(eval_trajectory))
-      # ])
-      # trajectories_per_skill.append(trajectory_states)
       if plot_name is not None:
-        plt.plot(
-            trajectory_coordinates[:, 0],
-            trajectory_coordinates[:, 1],
-            style_map[idx % len(style_map)],
-            label=(str(idx) if eval_idx == 0 else None))
-        # plt.plot(
-        #     trajectory_coordinates[0, 0],
-        #     trajectory_coordinates[0, 1],
-        #     marker='o',
-        #     color=style_map[idx % len(style_map)][0])
+        plt.plot(trajectory_coordinates[:, 0], trajectory_coordinates[:, 1])
         if predict_trajectory_steps > 0:
-          # predicted_states = np.array([
-          #     eval_trajectory[step_idx][-1]
-          #     for step_idx in range(len(eval_trajectory))
-          # ])
-          # predicted_trajectories_per_skill.append(predicted_states)
           for step_idx in range(len(eval_trajectory)):
             if step_idx % 20 == 0:
-              plt.plot(eval_trajectory[step_idx][-1][:, 0],
-                       eval_trajectory[step_idx][-1][:, 1], 'k:')
+              plt.plot(eval_trajectory[step_idx][-1][:, 0], eval_trajectory[step_idx][-1][:, 1])
 
       mean_reward += np.mean([
           eval_trajectory[step_idx][-1]
@@ -797,30 +782,11 @@ def eval_loop(eval_dir,
       metadata.write(
           str(idx) + ' ' + str(preset_skill) + ' ' +
           str(trajectory_coordinates[-1, :]) + '\n')
-
-    # all_predicted_trajectories.append(
-    #     np.stack(predicted_trajectories_per_skill))
-    # all_trajectories.append(np.stack(trajectories_per_skill))
-
-  # all_predicted_trajectories = np.stack(all_predicted_trajectories)
-  # all_trajectories = np.stack(all_trajectories)
-  # print(all_trajectories.shape, all_predicted_trajectories.shape)
-  # pkl.dump(
-  #     all_trajectories,
-  #     tf.io.gfile.GFile(
-  #         os.path.join(vid_dir, 'skill_dynamics_full_obs_r100_actual_trajectories.pkl'),
-  #         'wb'))
-  # pkl.dump(
-  #     all_predicted_trajectories,
-  #     tf.io.gfile.GFile(
-  #         os.path.join(vid_dir, 'skill_dynamics_full_obs_r100_predicted_trajectories.pkl'),
-  #         'wb'))
   if plot_name is not None:
     full_image_name = plot_name + '.png'
 
     # to save images while writing to CNS
     buf = io.BytesIO()
-    # plt.title('Trajectories in Continuous Skill Space')
     plt.savefig(buf, dpi=600, bbox_inches='tight')
     buf.seek(0)
     image = tf.io.gfile.GFile(os.path.join(eval_dir, full_image_name), 'w')
@@ -1362,11 +1328,6 @@ def main(_):
             trajectory_sample = rbuffer.get_next(
                 sample_batch_size=5, num_steps=2)
             trajectory_sample = _filter_trajectories(trajectory_sample)
-            # trajectory_sample, _ = relabel_skill(
-            #     trajectory_sample,
-            #     relabel_type='policy',
-            #     cur_policy=relabel_policy,
-            #     cur_skill_dynamics=agent.skill_dynamics)
             trajectory_sample, is_weights = relabel_skill(
                 trajectory_sample,
                 relabel_type='importance_sampling',
@@ -1584,41 +1545,15 @@ def main(_):
 
         average_reward_all_goals = []
         _, ax1 = plt.subplots(1, 1)
-        ax1.set_xlim(-20, 20)
-        ax1.set_ylim(-20, 20)
+        ax1.set_xlim(-5, 5)
+        ax1.set_ylim(-5, 5)
 
         final_text = open(os.path.join(eval_dir, 'eval_data.txt'), 'w')
-
-        # goal_list = []
-        # for r in range(4, 50):
-        #   for _ in range(10):
-        #     theta = np.random.uniform(-np.pi, np.pi)
-        #     goal_x = r * np.cos(theta)
-        #     goal_y = r * np.sin(theta)
-        #     goal_list.append([r, theta, goal_x, goal_y])
-
-        # def _sample_goal():
-        #   goal_coords = np.random.uniform(0, 5, size=2)
-        #   # while np.linalg.norm(goal_coords) < np.linalg.norm([10., 10.]):
-        #   #   goal_coords = np.random.uniform(-25, 25, size=2)
-        #   return goal_coords
-
-        # goal_coord_list = [_sample_goal() for _ in range(50)]
 
         for goal_idx, goal_coord in enumerate(goal_coord_list):
           # for goal_idx in range(1):
           print('Trying to reach the goal:', goal_coord)
-          # eval_plan_env = video_wrapper.VideoWrapper(
-          #     get_environment(env_name=FLAGS.environment + '_goal')
-          #     base_path=eval_dir,
-          #     base_name=save_label + '_' + str(goal_idx)))
-          # goal_coord = np.array(item[2:])
           eval_plan_env = get_environment(env_name=FLAGS.environment + '_goal')
-          # _, (ax1, ax2) = plt.subplots(1, 2)
-          # ax1.set_xlim(-12, 12)
-          # ax1.set_ylim(-12, 12)
-          # ax2.set_xlim(-1, 1)
-          # ax2.set_ylim(-1, 1)
           ax1.plot(goal_coord[0], goal_coord[1], marker='x', color='k')
           reward_list = []
 
@@ -1648,12 +1583,6 @@ def main(_):
                 actual_coords[:, 1],
                 color_map[goal_idx % len(color_map)],
                 linewidth=1)
-            # ax2.plot(
-            #     primitives[:, 0],
-            #     primitives[:, 1],
-            #     marker='x',
-            #     color=color_map[try_idx % len(color_map)],
-            #     linewidth=1)
             final_text.write(','.join([
                 str(item) for item in [
                     goal_coord[0],
@@ -1680,29 +1609,6 @@ def main(_):
         image = tf.io.gfile.GFile(os.path.join(eval_dir, save_label + '.png'), 'w')
         image.write(buf.read(-1))
         plt.clf()
-
-        # for iter_idx in range(1, actual_coords.shape[0]):
-        #   _, ax1 = plt.subplots(1, 1)
-        #   ax1.set_xlim(-2, 15)
-        #   ax1.set_ylim(-2, 15)
-        #   ax1.plot(
-        #       actual_coords[:iter_idx, 0],
-        #       actual_coords[:iter_idx, 1],
-        #       linewidth=1.2)
-        #   ax1.scatter(
-        #       np.array(goal_coord_list)[:, 0],
-        #       np.array(goal_coord_list)[:, 1],
-        #       marker='x',
-        #       color='k')
-        #   buf = io.BytesIO()
-        #   plt.savefig(buf, dpi=200, bbox_inches='tight')
-        #   buf.seek(0)
-        #   image = tf.io.gfile.GFile(
-        #       os.path.join(eval_dir,
-        #                    save_label + '_' + '%04d' % (iter_idx) + '.png'),
-        #       'w')
-        #   image.write(buf.read(-1))
-        #   plt.clf()
 
         plt.close()
         print('Average reward for all goals:', average_reward_all_goals)
