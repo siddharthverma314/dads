@@ -54,7 +54,7 @@ import dads_agent
 
 from envs import skill_wrapper
 from envs import video_wrapper
-# from envs.gym_mujoco import ant
+from envs.gym_mujoco import ant
 # from envs.gym_mujoco import half_cheetah
 # from envs.gym_mujoco import humanoid
 # from envs.gym_mujoco import point_mass
@@ -490,7 +490,7 @@ def process_observation(observation):
     red_obs = [_shape_based_observation_processing(observation, 0)]
   # x-y plane
   elif FLAGS.reduced_observation in [2, 6]:
-    if FLAGS.environment == 'Ant-v1' or 'DKitty' in FLAGS.environment or 'DClaw' in FLAGS.environment:
+    if 'Ant' in FLAGS.environment or 'DKitty' in FLAGS.environment or 'DClaw' in FLAGS.environment:
       red_obs = [
           _shape_based_observation_processing(observation, 0),
           _shape_based_observation_processing(observation, 1)

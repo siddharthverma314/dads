@@ -55,7 +55,7 @@
 --train_skill_dynamics_on_policy=0
 
 ### SHARED HYPERPARAMETERS ---------------------
---environment=AntResetFreeXY-v4
+--environment=AntResetFree-v4
 --max_env_steps=200
 --reduced_observation=0
 

@@ -55,7 +55,7 @@
 --train_skill_dynamics_on_policy=0
 
 ### SHARED HYPERPARAMETERS ---------------------
---environment=AntXY-v4
+--environment=Ant-v1
 --max_env_steps=200
 --reduced_observation=2
 

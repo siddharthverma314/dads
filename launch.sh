@@ -1,6 +1,6 @@
 #!/bin/bash
 count=0
-logdir=/store/vsiddharth/baselines/DADS_rebuttal
+logdir=/store/vsiddharth/baselines/DADS_rebuttal_3
 
 launch() {
     CUDA_VISIBLE_DEVICES=$count python unsupervised_skill_learning/dads_off.py \
