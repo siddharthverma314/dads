@@ -27,7 +27,7 @@ import sys
 sys.path.append(os.path.abspath('./'))
 
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
@@ -54,7 +54,7 @@ import dads_agent
 
 from envs import skill_wrapper
 from envs import video_wrapper
-from envs.gym_mujoco import ant
+# from envs.gym_mujoco import ant
 # from envs.gym_mujoco import half_cheetah
 # from envs.gym_mujoco import humanoid
 # from envs.gym_mujoco import point_mass
@@ -290,26 +290,11 @@ def get_environment(env_name='point_mass'):
         vertical_wrist_constraint=FLAGS.vertical_wrist_constraint,
         randomize_initial_position=bool(FLAGS.randomized_initial_distribution),
         randomize_initial_rotation=bool(FLAGS.randomized_initial_distribution))
-  elif env_name == 'Ant-v4':
+  elif env_name == 'Ant-v4' or env_name == 'AntResetFree-v4':
     import gym
     import ant_hrl_maze
-    env = gym.make('Ant-v4')
+    env = gym.make(env_name)
     observation_omit_size = 0
-  elif env_name == 'AntResetFree-v4':
-    import gym
-    import ant_hrl_maze
-    env = gym.make('AntResetFree-v4')
-    observation_omit_size = 0
-  elif env_name == 'AntXY-v4':
-    import gym
-    import ant_hrl_maze
-    env = gym.make('Ant-v4')
-    observation_omit_size = 2
-  elif env_name == 'AntResetFreeXY-v4':
-    import gym
-    import ant_hrl_maze
-    env = gym.make('AntResetFree-v4')
-    observation_omit_size = 2
   else:
     # note this is already wrapped, no need to wrap again
     env = suite_mujoco.load(env_name)
@@ -480,6 +465,8 @@ def process_observation(observation):
     qpos_dim = 9
   elif FLAGS.environment == 'Ant-v1':
     qpos_dim = 15
+  elif FLAGS.environment.startswith("Ant"):
+    qpos_dim = 29
   elif FLAGS.environment == 'Humanoid-v1':
     qpos_dim = 26
   elif 'DKitty' in FLAGS.environment:
@@ -712,8 +699,8 @@ def eval_loop(eval_dir,
     num_evals = FLAGS.num_evals
 
   if plot_name is not None:
-    plt.xlim(-5, 5)
-    plt.ylim(-5, 5)
+    plt.xlim(-2, 2)
+    plt.ylim(-2, 2)
 
   for idx in range(num_evals):
     if FLAGS.num_skills > 0:
@@ -1545,8 +1532,8 @@ def main(_):
 
         average_reward_all_goals = []
         _, ax1 = plt.subplots(1, 1)
-        ax1.set_xlim(-5, 5)
-        ax1.set_ylim(-5, 5)
+        ax1.set_xlim(-2, 2)
+        ax1.set_ylim(-2, 2)
 
         final_text = open(os.path.join(eval_dir, 'eval_data.txt'), 'w')
 

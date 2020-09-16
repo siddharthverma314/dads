@@ -261,37 +261,55 @@ def main(_):
       eval_policy.initialize(None)
       eval_policy.restore(os.path.join(FLAGS.logdir, 'models', 'policy'))
 
-      outer_observations = []
-      outer_actions = []
-      for skill in range(FLAGS.num_skills):
-        py_env = wrap_env(
-            skill_wrapper.SkillWrapper(
-                env,
-                num_latent_skills=FLAGS.num_skills,
-                skill_type=FLAGS.skill_type,
-                preset_skill=None,
-                min_steps_before_resample=FLAGS.min_steps_before_resample,
-                resample_prob=FLAGS.resample_prob),
-            max_episode_steps=FLAGS.max_env_steps)
+      plotdir = os.path.join(FLAGS.logdir, "plots")
+      if not os.path.exists(plotdir):
+        os.mkdir(plotdir)
+      do.FLAGS = FLAGS
+      do.eval_loop(
+        eval_dir=plotdir,
+        eval_policy=eval_policy,
+        plot_name="plot"
+      )
 
-        # get the goddamn skills
-        timestep = py_env.reset()
-        observations = [timestep.observation]
-        actions = []
-        for i in range(200):
-          action = eval_policy.action(timestep).action
-          timestep = py_env.step(action)
-          observations.append(timestep.observation)
-          actions.append(action)
-        observations = np.array(observations)
-        actions = np.array(actions)
-        outer_observations.append(observations)
-        outer_actions.append(actions)
+      #outer_observations = []
+      #outer_actions = []
+      #for skill in range(FLAGS.num_skills):
+      #  py_env = wrap_env(
+      #      skill_wrapper.SkillWrapper(
+      #          env,
+      #          num_latent_skills=FLAGS.num_skills,
+      #          skill_type=FLAGS.skill_type,
+      #          preset_skill=None,
+      #          min_steps_before_resample=FLAGS.min_steps_before_resample,
+      #          resample_prob=FLAGS.resample_prob),
+      #      max_episode_steps=FLAGS.max_env_steps)
 
-      with open('observations.pkl', 'wb') as f:
-        pkl.dump(np.array(outer_observations), f)
-      with open('actions.pkl', 'wb') as f:
-        pkl.dump(np.array(outer_actions), f)
+      #  # get the goddamn skills
+      #  timestep = py_env.reset()
+      #  observations = [timestep.observation]
+      #  actions = []
+      #  for i in range(200):
+      #    action = eval_policy.action(timestep).action
+      #    timestep = py_env.step(action)
+      #    observations.append(timestep.observation)
+      #    actions.append(action)
+      #  observations = np.array(observations)
+      #  actions = np.array(actions)
+      #  outer_observations.append(observations)
+      #  outer_actions.append(actions)
+
+      #with open('observations.pkl', 'wb') as f:
+      #  pkl.dump(np.array(outer_observations), f)
+      #with open('actions.pkl', 'wb') as f:
+      #  pkl.dump(np.array(outer_actions), f)
+
+      #import ipdb; ipdb.set_trace()
+      #for obs in outer_observations:
+      #  plt.cla()
+      #  plt.plot(obs[:, 0].flatten(), obs[:, 1].flatten())
+      #  plt.xlim(-2, 2)
+      #  plt.ylim(-2, 2)
+      #plt.savefig(os.path.join(FLAGS.logdir, 'plot.png'))
 
 
 if __name__ == '__main__':
