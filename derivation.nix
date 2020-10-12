@@ -11,6 +11,7 @@ let
   tensorflow = callPackage ./nix/tensorflow.nix {};
   tensorflow-probability = callPackage ./nix/tensorflow-probability.nix {};
   tf-agents = callPackage ./nix/tf-agents.nix {};
+  robel = callPackage ./nix/robel.nix {};
 in
 buildPythonPackage {
   pname = "dads";
@@ -25,6 +26,7 @@ buildPythonPackage {
     matplotlib
     mujoco-py
     click
+    robel
     transforms3d
   ];
 }
