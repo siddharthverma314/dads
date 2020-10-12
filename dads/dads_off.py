@@ -50,10 +50,10 @@ from tf_agents.specs import tensor_spec
 from tf_agents.utils import common
 from tf_agents.utils import nest_utils
 
-import dads_agent
+from dads import dads_agent
 
-from envs import skill_wrapper
-from envs import video_wrapper
+from dads.envs import skill_wrapper
+from dads.envs import video_wrapper
 # from envs.gym_mujoco import ant
 # from envs.gym_mujoco import half_cheetah
 # from envs.gym_mujoco import humanoid
@@ -63,8 +63,8 @@ from envs import video_wrapper
 # from envs import dkitty_redesign
 # from envs import hand_block
 
-from lib import py_tf_policy
-from lib import py_uniform_replay_buffer
+from dads.lib import py_tf_policy
+from dads.lib import py_uniform_replay_buffer
 
 FLAGS = flags.FLAGS
 nest = tf.nest
