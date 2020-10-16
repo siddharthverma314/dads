@@ -37,7 +37,7 @@ from tf_agents.utils import numpy_storage
 
 
 class PyUniformReplayBuffer(replay_buffer.ReplayBuffer):
-  """A Python-based replay buffer that supports uniform sampling.
+    """A Python-based replay buffer that supports uniform sampling.
 
   Writing and reading to this replay buffer is thread safe.
 
@@ -46,195 +46,202 @@ class PyUniformReplayBuffer(replay_buffer.ReplayBuffer):
   _on_delete.
   """
 
-  def __init__(self, data_spec, capacity):
-    """Creates a PyUniformReplayBuffer.
+    def __init__(self, data_spec, capacity):
+        """Creates a PyUniformReplayBuffer.
 
     Args:
       data_spec: An ArraySpec or a list/tuple/nest of ArraySpecs describing a
         single item that can be stored in this buffer.
       capacity: The maximum number of items that can be stored in the buffer.
     """
-    super(PyUniformReplayBuffer, self).__init__(data_spec, capacity)
+        super(PyUniformReplayBuffer, self).__init__(data_spec, capacity)
 
-    self._storage = numpy_storage.NumpyStorage(self._encoded_data_spec(),
-                                               capacity)
-    self._lock = threading.Lock()
-    self._np_state = numpy_storage.NumpyState()
+        self._storage = numpy_storage.NumpyStorage(self._encoded_data_spec(), capacity)
+        self._lock = threading.Lock()
+        self._np_state = numpy_storage.NumpyState()
 
-    # Adding elements to the replay buffer is done in a circular way.
-    # Keeps track of the actual size of the replay buffer and the location
-    # where to add new elements.
-    self._np_state.size = np.int64(0)
-    self._np_state.cur_id = np.int64(0)
+        # Adding elements to the replay buffer is done in a circular way.
+        # Keeps track of the actual size of the replay buffer and the location
+        # where to add new elements.
+        self._np_state.size = np.int64(0)
+        self._np_state.cur_id = np.int64(0)
 
-    # Total number of items that went through the replay buffer.
-    self._np_state.item_count = np.int64(0)
+        # Total number of items that went through the replay buffer.
+        self._np_state.item_count = np.int64(0)
 
-  def _encoded_data_spec(self):
-    """Spec of data items after encoding using _encode."""
-    return self._data_spec
+    def _encoded_data_spec(self):
+        """Spec of data items after encoding using _encode."""
+        return self._data_spec
 
-  def _encode(self, item):
-    """Encodes an item (before adding it to the buffer)."""
-    return item
+    def _encode(self, item):
+        """Encodes an item (before adding it to the buffer)."""
+        return item
 
-  def _decode(self, item):
-    """Decodes an item."""
-    return item
+    def _decode(self, item):
+        """Decodes an item."""
+        return item
 
-  def _on_delete(self, encoded_item):
-    """Do any necessary cleanup."""
-    pass
+    def _on_delete(self, encoded_item):
+        """Do any necessary cleanup."""
+        pass
 
-  @property
-  def size(self):
-    return self._np_state.size
+    @property
+    def size(self):
+        return self._np_state.size
 
-  def _add_batch(self, items):
-    outer_shape = nest_utils.get_outer_array_shape(items, self._data_spec)
-    if outer_shape[0] != 1:
-      raise NotImplementedError('PyUniformReplayBuffer only supports a batch '
-                                'size of 1, but received `items` with batch '
-                                'size {}.'.format(outer_shape[0]))
+    def _add_batch(self, items):
+        outer_shape = nest_utils.get_outer_array_shape(items, self._data_spec)
+        if outer_shape[0] != 1:
+            raise NotImplementedError(
+                "PyUniformReplayBuffer only supports a batch "
+                "size of 1, but received `items` with batch "
+                "size {}.".format(outer_shape[0])
+            )
 
-    item = nest_utils.unbatch_nested_array(items)
-    with self._lock:
-      if self._np_state.size == self._capacity:
-        # If we are at capacity, we are deleting element cur_id.
-        self._on_delete(self._storage.get(self._np_state.cur_id))
-      self._storage.set(self._np_state.cur_id, self._encode(item))
-      self._np_state.size = np.minimum(self._np_state.size + 1,
-                                       self._capacity)
-      self._np_state.cur_id = (self._np_state.cur_id + 1) % self._capacity
-      self._np_state.item_count += 1
+        item = nest_utils.unbatch_nested_array(items)
+        with self._lock:
+            if self._np_state.size == self._capacity:
+                # If we are at capacity, we are deleting element cur_id.
+                self._on_delete(self._storage.get(self._np_state.cur_id))
+            self._storage.set(self._np_state.cur_id, self._encode(item))
+            self._np_state.size = np.minimum(self._np_state.size + 1, self._capacity)
+            self._np_state.cur_id = (self._np_state.cur_id + 1) % self._capacity
+            self._np_state.item_count += 1
 
-  def _get_next(self,
-                sample_batch_size=None,
-                num_steps=None,
-                time_stacked=True):
-    num_steps_value = num_steps if num_steps is not None else 1
-    def get_single():
-      """Gets a single item from the replay buffer."""
-      with self._lock:
-        if self._np_state.size <= 0:
-          def empty_item(spec):
-            return np.empty(spec.shape, dtype=spec.dtype)
-          if num_steps is not None:
-            item = [tf.nest.map_structure(empty_item, self.data_spec)
-                    for n in range(num_steps)]
-            if time_stacked:
-              item = nest_utils.stack_nested_arrays(item)
-          else:
-            item = tf.nest.map_structure(empty_item, self.data_spec)
-          return item
-        idx = np.random.randint(self._np_state.size - num_steps_value + 1)
-        if self._np_state.size == self._capacity:
-          # If the buffer is full, add cur_id (head of circular buffer) so that
-          # we sample from the range [cur_id, cur_id + size - num_steps_value].
-          # We will modulo the size below.
-          idx += self._np_state.cur_id
+    def _get_next(self, sample_batch_size=None, num_steps=None, time_stacked=True):
+        num_steps_value = num_steps if num_steps is not None else 1
 
-        if num_steps is not None:
-          # TODO(b/120242830): Try getting data from numpy in one shot rather
-          # than num_steps_value.
-          item = [self._decode(self._storage.get((idx + n) % self._capacity))
-                  for n in range(num_steps)]
+        def get_single():
+            """Gets a single item from the replay buffer."""
+            with self._lock:
+                if self._np_state.size <= 0:
+
+                    def empty_item(spec):
+                        return np.empty(spec.shape, dtype=spec.dtype)
+
+                    if num_steps is not None:
+                        item = [
+                            tf.nest.map_structure(empty_item, self.data_spec)
+                            for n in range(num_steps)
+                        ]
+                        if time_stacked:
+                            item = nest_utils.stack_nested_arrays(item)
+                    else:
+                        item = tf.nest.map_structure(empty_item, self.data_spec)
+                    return item
+                idx = np.random.randint(self._np_state.size - num_steps_value + 1)
+                if self._np_state.size == self._capacity:
+                    # If the buffer is full, add cur_id (head of circular buffer) so that
+                    # we sample from the range [cur_id, cur_id + size - num_steps_value].
+                    # We will modulo the size below.
+                    idx += self._np_state.cur_id
+
+                if num_steps is not None:
+                    # TODO(b/120242830): Try getting data from numpy in one shot rather
+                    # than num_steps_value.
+                    item = [
+                        self._decode(self._storage.get((idx + n) % self._capacity))
+                        for n in range(num_steps)
+                    ]
+                else:
+                    item = self._decode(self._storage.get(idx % self._capacity))
+
+            if num_steps is not None and time_stacked:
+                item = nest_utils.stack_nested_arrays(item)
+            return item
+
+        if sample_batch_size is None:
+            return get_single()
         else:
-          item = self._decode(self._storage.get(idx % self._capacity))
+            samples = [get_single() for _ in range(sample_batch_size)]
+            return nest_utils.stack_nested_arrays(samples)
 
-      if num_steps is not None and time_stacked:
-        item = nest_utils.stack_nested_arrays(item)
-      return item
+    def _as_dataset(
+        self, sample_batch_size=None, num_steps=None, num_parallel_calls=None
+    ):
+        if num_parallel_calls is not None:
+            raise NotImplementedError(
+                "PyUniformReplayBuffer does not support "
+                "num_parallel_calls (must be None)."
+            )
 
-    if sample_batch_size is None:
-      return get_single()
-    else:
-      samples = [get_single() for _ in range(sample_batch_size)]
-      return nest_utils.stack_nested_arrays(samples)
-
-  def _as_dataset(self, sample_batch_size=None, num_steps=None,
-                  num_parallel_calls=None):
-    if num_parallel_calls is not None:
-      raise NotImplementedError('PyUniformReplayBuffer does not support '
-                                'num_parallel_calls (must be None).')
-
-    data_spec = self._data_spec
-    if sample_batch_size is not None:
-      data_spec = array_spec.add_outer_dims_nest(
-          data_spec, (sample_batch_size,))
-    if num_steps is not None:
-      data_spec = (data_spec,) * num_steps
-    shapes = tuple(s.shape for s in tf.nest.flatten(data_spec))
-    dtypes = tuple(s.dtype for s in tf.nest.flatten(data_spec))
-
-    def generator_fn():
-      while True:
+        data_spec = self._data_spec
         if sample_batch_size is not None:
-          batch = [self._get_next(num_steps=num_steps, time_stacked=False)
-                   for _ in range(sample_batch_size)]
-          item = nest_utils.stack_nested_arrays(batch)
+            data_spec = array_spec.add_outer_dims_nest(data_spec, (sample_batch_size,))
+        if num_steps is not None:
+            data_spec = (data_spec,) * num_steps
+        shapes = tuple(s.shape for s in tf.nest.flatten(data_spec))
+        dtypes = tuple(s.dtype for s in tf.nest.flatten(data_spec))
+
+        def generator_fn():
+            while True:
+                if sample_batch_size is not None:
+                    batch = [
+                        self._get_next(num_steps=num_steps, time_stacked=False)
+                        for _ in range(sample_batch_size)
+                    ]
+                    item = nest_utils.stack_nested_arrays(batch)
+                else:
+                    item = self._get_next(num_steps=num_steps, time_stacked=False)
+                yield tuple(tf.nest.flatten(item))
+
+        def time_stack(*structures):
+            time_axis = 0 if sample_batch_size is None else 1
+            return tf.nest.map_structure(
+                lambda *elements: tf.stack(elements, axis=time_axis), *structures
+            )
+
+        ds = tf.data.Dataset.from_generator(generator_fn, dtypes, shapes).map(
+            lambda *items: tf.nest.pack_sequence_as(data_spec, items)
+        )
+        if num_steps is not None:
+            return ds.map(time_stack)
         else:
-          item = self._get_next(num_steps=num_steps, time_stacked=False)
-        yield tuple(tf.nest.flatten(item))
+            return ds
 
-    def time_stack(*structures):
-      time_axis = 0 if sample_batch_size is None else 1
-      return tf.nest.map_structure(
-          lambda *elements: tf.stack(elements, axis=time_axis), *structures)
+    def _gather_all(self):
+        data = [self._decode(self._storage.get(idx)) for idx in range(self._capacity)]
+        stacked = nest_utils.stack_nested_arrays(data)
+        batched = tf.nest.map_structure(lambda t: np.expand_dims(t, 0), stacked)
+        return batched
 
-    ds = tf.data.Dataset.from_generator(
-        generator_fn, dtypes,
-        shapes).map(lambda *items: tf.nest.pack_sequence_as(data_spec, items))
-    if num_steps is not None:
-      return ds.map(time_stack)
-    else:
-      return ds
+    def _clear(self):
+        self._np_state.size = np.int64(0)
+        self._np_state.cur_id = np.int64(0)
 
-  def _gather_all(self):
-    data = [self._decode(self._storage.get(idx))
-            for idx in range(self._capacity)]
-    stacked = nest_utils.stack_nested_arrays(data)
-    batched = tf.nest.map_structure(lambda t: np.expand_dims(t, 0), stacked)
-    return batched
+    def gather_all_transitions(self):
+        num_steps_value = 2
 
-  def _clear(self):
-    self._np_state.size = np.int64(0)
-    self._np_state.cur_id = np.int64(0)
+        def get_single(idx):
+            """Gets the idx item from the replay buffer."""
+            with self._lock:
+                if self._np_state.size <= idx:
 
-  def gather_all_transitions(self):
-    num_steps_value = 2
+                    def empty_item(spec):
+                        return np.empty(spec.shape, dtype=spec.dtype)
 
-    def get_single(idx):
-      """Gets the idx item from the replay buffer."""
-      with self._lock:
-        if self._np_state.size <= idx:
+                    item = [
+                        tf.nest.map_structure(empty_item, self.data_spec)
+                        for n in range(num_steps_value)
+                    ]
+                    item = nest_utils.stack_nested_arrays(item)
+                    return item
 
-          def empty_item(spec):
-            return np.empty(spec.shape, dtype=spec.dtype)
+                if self._np_state.size == self._capacity:
+                    # If the buffer is full, add cur_id (head of circular buffer) so that
+                    # we sample from the range [cur_id, cur_id + size - num_steps_value].
+                    # We will modulo the size below.
+                    idx += self._np_state.cur_id
 
-          item = [
-              tf.nest.map_structure(empty_item, self.data_spec)
-              for n in range(num_steps_value)
-          ]
-          item = nest_utils.stack_nested_arrays(item)
-          return item
+                item = [
+                    self._decode(self._storage.get((idx + n) % self._capacity))
+                    for n in range(num_steps_value)
+                ]
 
-        if self._np_state.size == self._capacity:
-          # If the buffer is full, add cur_id (head of circular buffer) so that
-          # we sample from the range [cur_id, cur_id + size - num_steps_value].
-          # We will modulo the size below.
-          idx += self._np_state.cur_id
+            item = nest_utils.stack_nested_arrays(item)
+            return item
 
-        item = [
-            self._decode(self._storage.get((idx + n) % self._capacity))
-            for n in range(num_steps_value)
+        samples = [
+            get_single(idx) for idx in range(self._np_state.size - num_steps_value + 1)
         ]
-
-      item = nest_utils.stack_nested_arrays(item)
-      return item
-
-    samples = [
-        get_single(idx)
-        for idx in range(self._np_state.size - num_steps_value + 1)
-    ]
-    return nest_utils.stack_nested_arrays(samples)
+        return nest_utils.stack_nested_arrays(samples)

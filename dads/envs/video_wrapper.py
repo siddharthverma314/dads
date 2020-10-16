@@ -22,45 +22,51 @@ import gym
 from gym import Wrapper
 from gym.wrappers.monitoring import video_recorder
 
+
 class VideoWrapper(Wrapper):
+    def __init__(self, env, base_path, base_name=None, new_video_every_reset=False):
+        super(VideoWrapper, self).__init__(env)
 
-  def __init__(self, env, base_path, base_name=None, new_video_every_reset=False):
-    super(VideoWrapper, self).__init__(env)
+        self._base_path = base_path
+        self._base_name = base_name
 
-    self._base_path = base_path
-    self._base_name = base_name
+        self._new_video_every_reset = new_video_every_reset
+        if self._new_video_every_reset:
+            self._counter = 0
+            self._recorder = None
+        else:
+            if self._base_name is not None:
+                self._vid_name = os.path.join(self._base_path, self._base_name)
+            else:
+                self._vid_name = self._base_path
+            self._recorder = video_recorder.VideoRecorder(
+                self.env, path=self._vid_name + ".mp4"
+            )
 
-    self._new_video_every_reset = new_video_every_reset
-    if self._new_video_every_reset:
-      self._counter = 0
-      self._recorder = None
-    else:
-      if self._base_name is not None:
-        self._vid_name = os.path.join(self._base_path, self._base_name)
-      else:
-        self._vid_name = self._base_path
-      self._recorder = video_recorder.VideoRecorder(self.env, path=self._vid_name + '.mp4')
+    def reset(self):
+        if self._new_video_every_reset:
+            if self._recorder is not None:
+                self._recorder.close()
 
-  def reset(self):
-    if self._new_video_every_reset:
-      if self._recorder is not None:
+            self._counter += 1
+            if self._base_name is not None:
+                self._vid_name = os.path.join(
+                    self._base_path, self._base_name + "_" + str(self._counter)
+                )
+            else:
+                self._vid_name = self._base_path + "_" + str(self._counter)
+
+            self._recorder = video_recorder.VideoRecorder(
+                self.env, path=self._vid_name + ".mp4"
+            )
+
+        return self.env.reset()
+
+    def step(self, action):
+        self._recorder.capture_frame()
+        return self.env.step(action)
+
+    def close(self):
+        self._recorder.encoder.proc.stdin.flush()
         self._recorder.close()
-
-      self._counter += 1
-      if self._base_name is not None:
-        self._vid_name = os.path.join(self._base_path, self._base_name + '_' + str(self._counter))
-      else:
-        self._vid_name = self._base_path + '_' + str(self._counter)
-
-      self._recorder = video_recorder.VideoRecorder(self.env, path=self._vid_name + '.mp4')
-
-    return self.env.reset()
-
-  def step(self, action):
-    self._recorder.capture_frame()
-    return self.env.step(action)
-
-  def close(self):
-    self._recorder.encoder.proc.stdin.flush()
-    self._recorder.close()
-    return self.env.close()
+        return self.env.close()

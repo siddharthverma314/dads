@@ -28,17 +28,17 @@ from robel.utils.configurable import configurable
 from robel.utils.math_utils import calculate_cosine
 from robel.utils.resources import get_asset_path
 
-DKITTY_ASSET_PATH = 'robel/dkitty/assets/dkitty_walk-v0.xml'
+DKITTY_ASSET_PATH = "robel/dkitty/assets/dkitty_walk-v0.xml"
 
 DEFAULT_OBSERVATION_KEYS = (
-    'root_pos',
-    'root_euler',
-    'kitty_qpos',
+    "root_pos",
+    "root_euler",
+    "kitty_qpos",
     # 'root_vel',
     # 'root_angular_vel',
-    'kitty_qvel',
-    'last_action',
-    'upright',
+    "kitty_qvel",
+    "last_action",
+    "upright",
 )
 
 
@@ -46,20 +46,21 @@ class BaseDKittyWalk(BaseDKittyUprightEnv, metaclass=abc.ABCMeta):
     """Shared logic for DKitty walk tasks."""
 
     def __init__(
-            self,
-            asset_path: str = DKITTY_ASSET_PATH,
-            observation_keys: Sequence[str] = DEFAULT_OBSERVATION_KEYS,
-            device_path: Optional[str] = None,
-            torso_tracker_id: Optional[Union[str, int]] = None,
-            frame_skip: int = 40,
-            sticky_action_probability: float = 0.,
-            upright_threshold: float = 0.9,
-            upright_reward: float = 1,
-            falling_reward: float = -500,
-            expose_last_action: bool = True,
-            expose_upright: bool = True,
-            robot_noise_ratio: float = 0.05,
-            **kwargs):
+        self,
+        asset_path: str = DKITTY_ASSET_PATH,
+        observation_keys: Sequence[str] = DEFAULT_OBSERVATION_KEYS,
+        device_path: Optional[str] = None,
+        torso_tracker_id: Optional[Union[str, int]] = None,
+        frame_skip: int = 40,
+        sticky_action_probability: float = 0.0,
+        upright_threshold: float = 0.9,
+        upright_reward: float = 1,
+        falling_reward: float = -500,
+        expose_last_action: bool = True,
+        expose_upright: bool = True,
+        robot_noise_ratio: float = 0.05,
+        **kwargs
+    ):
         """Initializes the environment.
 
         Args:
@@ -83,14 +84,14 @@ class BaseDKittyWalk(BaseDKittyUprightEnv, metaclass=abc.ABCMeta):
         self._expose_upright = expose_upright
         observation_keys = observation_keys[:-2]
         if self._expose_last_action:
-            observation_keys += ('last_action',)
+            observation_keys += ("last_action",)
         if self._expose_upright:
-            observation_keys += ('upright',)
+            observation_keys += ("upright",)
 
         # robot_config = self.get_robot_config(device_path)
         # if 'sim_observation_noise' in robot_config.keys():
         #     robot_config['sim_observation_noise'] = robot_noise_ratio
- 
+
         super().__init__(
             sim_model=get_asset_path(asset_path),
             # robot_config=robot_config,
@@ -102,7 +103,8 @@ class BaseDKittyWalk(BaseDKittyUprightEnv, metaclass=abc.ABCMeta):
             upright_threshold=upright_threshold,
             upright_reward=upright_reward,
             falling_reward=falling_reward,
-            **kwargs)
+            **kwargs
+        )
 
         self._last_action = np.zeros(12)
         self._sticky_action_probability = sticky_action_probability
@@ -113,9 +115,9 @@ class BaseDKittyWalk(BaseDKittyUprightEnv, metaclass=abc.ABCMeta):
         self._reset_dkitty_standing()
 
         # Set the tracker locations.
-        self.tracker.set_state({
-            'torso': TrackerState(pos=np.zeros(3), rot=np.identity(3)),
-        })
+        self.tracker.set_state(
+            {"torso": TrackerState(pos=np.zeros(3), rot=np.identity(3)),}
+        )
 
         self._time_step = 0
 
@@ -128,9 +130,9 @@ class BaseDKittyWalk(BaseDKittyUprightEnv, metaclass=abc.ABCMeta):
         action_to_apply = np.where(rand, self._last_action, action)
 
         # Apply action.
-        self.robot.step({
-            'dkitty': action_to_apply,
-        })
+        self.robot.step(
+            {"dkitty": action_to_apply,}
+        )
         # Save the action to add to the observation.
         self._last_action = action
 
@@ -141,18 +143,19 @@ class BaseDKittyWalk(BaseDKittyUprightEnv, metaclass=abc.ABCMeta):
             A dictionary of observation values. This should be an ordered
             dictionary if `observation_keys` isn't set.
         """
-        robot_state = self.robot.get_state('dkitty')
-        torso_track_state = self.tracker.get_state(
-            ['torso'])[0]
-        obs_dict = (('root_pos', torso_track_state.pos),
-                    ('root_euler', torso_track_state.rot_euler),
-                    ('root_vel', torso_track_state.vel),
-                    ('root_angular_vel', torso_track_state.angular_vel),
-                    ('kitty_qpos', robot_state.qpos),
-                    ('kitty_qvel', robot_state.qvel))
+        robot_state = self.robot.get_state("dkitty")
+        torso_track_state = self.tracker.get_state(["torso"])[0]
+        obs_dict = (
+            ("root_pos", torso_track_state.pos),
+            ("root_euler", torso_track_state.rot_euler),
+            ("root_vel", torso_track_state.vel),
+            ("root_angular_vel", torso_track_state.angular_vel),
+            ("kitty_qpos", robot_state.qpos),
+            ("kitty_qvel", robot_state.qvel),
+        )
 
         if self._expose_last_action:
-            obs_dict += (('last_action', self._last_action),)
+            obs_dict += (("last_action", self._last_action),)
 
         # Add observation terms relating to being upright.
         if self._expose_upright:
@@ -161,21 +164,18 @@ class BaseDKittyWalk(BaseDKittyUprightEnv, metaclass=abc.ABCMeta):
         return collections.OrderedDict(obs_dict)
 
     def get_reward_dict(
-            self,
-            action: np.ndarray,
-            obs_dict: Dict[str, np.ndarray],
+        self, action: np.ndarray, obs_dict: Dict[str, np.ndarray],
     ) -> Dict[str, np.ndarray]:
         """Returns the reward for the given action and observation."""
         reward_dict = collections.OrderedDict(())
         return reward_dict
 
     def get_score_dict(
-            self,
-            obs_dict: Dict[str, np.ndarray],
-            reward_dict: Dict[str, np.ndarray],
+        self, obs_dict: Dict[str, np.ndarray], reward_dict: Dict[str, np.ndarray],
     ) -> Dict[str, np.ndarray]:
         """Returns a standardized measure of success for the environment."""
         return collections.OrderedDict(())
+
 
 @configurable(pickleable=True)
 class DKittyRandomDynamics(BaseDKittyWalk):
@@ -185,8 +185,7 @@ class DKittyRandomDynamics(BaseDKittyWalk):
         super().__init__(*args, **kwargs)
         self._randomizer = SimRandomizer(self)
         self._randomize_hfield = randomize_hfield
-        self._dof_indices = (
-            self.robot.get_config('dkitty').qvel_indices.tolist())
+        self._dof_indices = self.robot.get_config("dkitty").qvel_indices.tolist()
 
     def _reset(self):
         """Resets the environment."""
@@ -198,8 +197,7 @@ class DKittyRandomDynamics(BaseDKittyWalk):
             friction_loss_range=(0.001, 0.005),
         )
         self._randomizer.randomize_actuators(
-            all_same=True,
-            kp_range=(2.8, 3.2),
+            all_same=True, kp_range=(2.8, 3.2),
         )
         # Randomize friction on all geoms in the scene.
         self._randomizer.randomize_geoms(
@@ -210,8 +208,7 @@ class DKittyRandomDynamics(BaseDKittyWalk):
         )
         # Generate a random height field.
         self._randomizer.randomize_global(
-            total_mass_range=(1.6, 2.0),
-            height_field_range=(0, self._randomize_hfield),
+            total_mass_range=(1.6, 2.0), height_field_range=(0, self._randomize_hfield),
         )
         # if self._randomize_hfield > 0.0:
         #     self.sim_scene.upload_height_field(0)
